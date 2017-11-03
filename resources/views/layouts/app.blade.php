@@ -8,13 +8,25 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>Framework test</title>
 
     <!-- Styles -->
     <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 
     {{-- script --}}
     <script type="text/javascript" src="{{asset('js/jquery-2.0.3.min.js')}}"></script>
+
+    <style type="text/css">
+        .form-group .error-label{
+            display: none;
+            color: #ff4545;
+            font-weight: normal;
+        }
+
+        .has-error .error-label{
+            display: block;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
@@ -32,7 +44,7 @@
 
                     <!-- Branding Image -->
                     <a class="navbar-brand" href="{{ url('/') }}">
-                        {{ config('app.name', 'Laravel') }}
+                        Framework test
                     </a>
                 </div>
 

@@ -40,12 +40,40 @@ class PostController extends Controller
             return ['status'=>'fail','messages'=>$validator->messages()];
         }
 
-        return ['status'=>'success','posts'=>\Auth::user()->posts()->orderBy('created_at','desc')->get()];
+        return ['status'=>'success','posts'=>\App\Post::orderBy('created_at','desc')->get()->load('author')];
+    }
+
+    public function json_update_post(Request $request){
+        $validator = Validator::make($request->all(),[
+            'content'=>'required',
+            'id'=>'required'
+            ]);
+
+        if($validator->passes())
+        {
+            $post = \App\Post::find($request->id);
+
+            if($post->user_id != \Auth::user()->id)
+                return ['status'=>'fail','messages'=>["content"=>["This post is not yours"]]];
+
+            $post->content = $request->content;
+            $post->save();
+        }
+        else
+        {
+            return ['status'=>'fail','messages'=>$validator->messages()];
+        }
+
+        return ['status'=>'success','posts'=>\App\Post::orderBy('created_at','desc')->get()->load('author')];
     }
 
     public function json_delete_post(Request $request){
         \App\Post::find($request->id)->delete();
 
-        return ['status'=>'deleted','posts'=>\Auth::user()->posts()->orderBy('created_at','desc')->get()];
+        return ['status'=>'deleted','posts'=>\Auth::user()->posts()->orderBy('created_at','desc')->get()->load('author')];
+    }
+
+    public function json_get_post(Request $request){
+        return \App\Post::find($request->id);
     }
 }

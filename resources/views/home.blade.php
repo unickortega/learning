@@ -1,13 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-<style type="text/css">
-    .post{
-        padding: 10px;
-        border: 1px solid #cecece;
-        background: white;
-    }
-</style>
 <div class="container">
     <div class="row">
         <div class="col-md-8 col-md-offset-2">
@@ -24,14 +17,13 @@
                     You are logged in!
                 </div>
             </div>
-
             <div class="panel panel-default">
                 <div class="panel-heading">Posts</div>
-                
                 <div class="row">
                     <div class="col-md-12">
                         <div class="form-group" style="padding:10px;">
-                            <textarea class="form-control" id="text-area"></textarea>
+                            <textarea class="form-control" id="content"></textarea>
+                            <label class="error-label">asdsd</label>
                             <button id="submit_post" type="submit" class="btn btn-primary pull-right" style="margin-top:10px;">
                                 POST
                             </button>
@@ -42,10 +34,13 @@
                 <div class="panel-body" id="post-container">
                     {{Auth::user()->posts()->count() < 1 ? 'You, currently, have no posts' : ''}}                
     
-                    @foreach(Auth::user()->posts()->orderBy('created_at','desc')->get() as $post)
+                    @foreach(\App\Post::orderBy('created_at','desc')->get() as $post)
                         <div class="post">
                             <h3>{{$post->content}}</h3>
-                            <span style="color:#de6868; cursor: pointer;" onclick="_delete({{$post->id}})">DELETE</span> | <span style="color:#cecece;">created {{$post->created_at}}</span>
+                            @if(\Auth::user()->id == $post->user_id)
+                            <span style="color:rgb(114, 104, 222); cursor: pointer;" onclick="_update({{$post->id}})">Update</span> | <span style="color:#de6868; cursor: pointer;" onclick="_delete({{$post->id}})">delete</span> | 
+                            @endif
+                            <span style="color:#cecece;">created {{$post->created_at}}</span> | <span style="color:#cecece;">by {{$post->author->name}}</span>
                             <hr>
                         </div>
                     @endforeach
@@ -53,24 +48,97 @@
             </div>
         </div>
     </div>
+    <div id="post-modal" class="modal fade" role="dialog">
+        <div class="modal-dialog" style="width: 400px">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    <h4 class="modal-title">Update Post</h4>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group" style="padding:10px;">
+                                <textarea class="form-control content"></textarea>
+                                <label class="error-label">asdsd</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary save" data-invoiceid="">Submit</button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
     <script type="text/javascript">
         $(document).ready(function(){
+            var pendingpost = false;
+            $('textarea,input').change(function(){
+                $(this).parent().removeClass('has-error');
+            });
             $('#submit_post').click(function(){
-                $.ajax({
-                    url:'{{route("json_create_post")}}',
-                    type:'POST',
-                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
-                    data: { content: $('#text-area').val()},
-                    success:function(data){
-                        // 
-                        if(data.status == "success"){
-                            $('#post-container').html('');
-                            for(var i =0 ; i < data.posts.length; i++){
-                                addPost(data.posts[i]);
+                if(!pendingpost){
+                    pendingpost = true;
+                    $.ajax({
+                        url:'{{route("json_create_post")}}',
+                        type:'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        data: { content: $('#content').val()},
+                        success:function(data){
+                            // 
+                            pendingpost = false
+                            if(data.status == "success"){
+                                $('#post-container').html('');
+                                $('#content').val('')
+                                for(var i =0 ; i < data.posts.length; i++){
+                                    addPost(data.posts[i]);
+                                }
+                            }
+                            else
+                            {
+                                $.each(data.messages,function(k,v){
+                                    // 
+                                    $('#'+k).parent().addClass('has-error');
+                                    $('#'+k).parent().find('.error-label').html(v[0]);
+                                });
                             }
                         }
-                    }
-                });
+                    });
+                }
+            });
+
+            $('#post-modal .save').click(function(){
+                if(!pendingpost){
+                    pendingpost = true;
+                    $.ajax({
+                        url:'{{route("json_update_post")}}',
+                        type:'POST',
+                        headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                        data: { content: $('#post-modal .content').val(), id : $('#post-modal').data('data').id},
+                        success:function(data){
+                            // 
+                            pendingpost = false
+                            if(data.status == "success"){
+                                $('#post-container').html('');
+                                for(var i =0 ; i < data.posts.length; i++){
+                                    addPost(data.posts[i]);
+                                }
+
+                                $('#post-modal').modal('hide');
+                            }
+                            else
+                            {
+                                $.each(data.messages,function(k,v){
+                                    // 
+                                    $('#post-modal .'+k).parent().addClass('has-error');
+                                    $('#post-modal .'+k).parent().find('.error-label').html(v[0]);
+                                });
+                            }
+                        }
+                    });
+                }
             });
         });
 
@@ -92,9 +160,33 @@
                 });
         }
 
+        function _update(id){
+            $('#post-modal .form-group').removeClass('has-error');
+            $.ajax({
+                url:"{{route('json_get_post')}}",
+                type:"GET",
+                data:{id:id},
+                success:function(data){
+                    var modal = $('#post-modal');
+                    modal.modal('show');
+                    modal.find('.content').val(data.content);
+                    modal.data('data',data);
+                }
+            });
+        }
+
         function addPost(data){
-                $('#post-container').append('<div class="post"><h3>'+data.content+'</h3><span style="color:#cecece;">created '+data.created_at+'</span><hr></div>');
+            var html = '<div class="post"><h3>'+data.content+'</h3>';
+
+            if(data.user_id == {{\Auth::user()->id}})
+            {
+                html+= '<span style="color:rgb(114, 104, 222); cursor: pointer;" onclick="_update('+data.id+')">Update</span> | <span style="color:#de6868; cursor: pointer;" onclick="_delete('+data.id+')">delete</span> | ';
             }
+
+            html+= '<span style="color:#cecece;">created '+data.created_at+'</span> | <span style="color:#cecece;">by '+data.author.name+'</span><hr></div>';
+
+            $('#post-container').append(html);
+        }
     </script>
 </div>
 @endsection
