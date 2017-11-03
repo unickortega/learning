@@ -38,7 +38,7 @@
                         <div class="post">
                             <h3>{{$post->content}}</h3>
                             @if(\Auth::user()->id == $post->user_id)
-                            <span style="color:rgb(114, 104, 222); cursor: pointer;" onclick="_update({{$post->id}})">Update</span> | <span style="color:#de6868; cursor: pointer;" onclick="_delete({{$post->id}})">delete</span> | 
+                            <span style="color:rgb(114, 104, 222); cursor: pointer;" onclick="_update({{$post->id}})">Update</span> | <span style="color:#de6868; cursor: pointer;" onclick="_delete({{$post->id}})">Delete</span> | 
                             @endif
                             <span style="color:#cecece;">created {{$post->created_at}}</span> | <span style="color:#cecece;">by {{$post->author->name}}</span>
                             <hr>
@@ -180,7 +180,7 @@
 
             if(data.user_id == {{\Auth::user()->id}})
             {
-                html+= '<span style="color:rgb(114, 104, 222); cursor: pointer;" onclick="_update('+data.id+')">Update</span> | <span style="color:#de6868; cursor: pointer;" onclick="_delete('+data.id+')">delete</span> | ';
+                html+= '<span style="color:rgb(114, 104, 222); cursor: pointer;" onclick="_update('+data.id+')">Update</span> | <span style="color:#de6868; cursor: pointer;" onclick="_delete('+data.id+')">Delete</span> | ';
             }
 
             html+= '<span style="color:#cecece;">created '+data.created_at+'</span> | <span style="color:#cecece;">by '+data.author.name+'</span><hr></div>';
