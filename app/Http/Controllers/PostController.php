@@ -40,7 +40,7 @@ class PostController extends Controller
             return ['status'=>'fail','messages'=>$validator->messages()];
         }
 
-        return ['status'=>'success','posts'=>\App\Post::orderBy('created_at','desc')->get()->load('author')];
+        return ['status'=>'success','posts'=>\App\Post::orderBy('created_at','desc')->get()->load('author')->load('likes')];
     }
 
     public function json_update_post(Request $request){
@@ -64,16 +64,36 @@ class PostController extends Controller
             return ['status'=>'fail','messages'=>$validator->messages()];
         }
 
-        return ['status'=>'success','posts'=>\App\Post::orderBy('created_at','desc')->get()->load('author')];
+        return ['status'=>'success','posts'=>\App\Post::orderBy('created_at','desc')->get()->load('author')->load('likes')];
     }
 
     public function json_delete_post(Request $request){
         \App\Post::find($request->id)->delete();
 
-        return ['status'=>'deleted','posts'=>\Auth::user()->posts()->orderBy('created_at','desc')->get()->load('author')];
+        return ['status'=>'deleted','posts'=>\Auth::user()->posts()->orderBy('created_at','desc')->get()->load('author')->load('likes')];
     }
 
     public function json_get_post(Request $request){
         return \App\Post::find($request->id);
+    }
+
+    public function json_update_like(Request $request){
+        $post = \App\Post::find($request->post_id);
+
+        if($post->likes()->where('user_id',\Auth::user()->id)->count() > 0){
+            \DB::table('likes')->where('post_id',$request->post_id)->where('user_id',\Auth::user()->id)->delete();
+            return ['status'=>'success', 'message'=>'unliked', 'likes'=> $post->likes()->count()];
+        }
+        else
+        {
+            $like = new \App\Like;
+            $like->user_id = \Auth::user()->id;
+            $like->post_id = $request->post_id;
+            $like->save();
+
+            return ['status'=>'success', 'message'=>'liked', 'likes'=> $post->likes()->count()];
+        }
+
+        return ['status'=>'success'];
     }
 }

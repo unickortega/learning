@@ -37,6 +37,7 @@
                     @foreach(\App\Post::orderBy('created_at','desc')->get() as $post)
                         <div class="post">
                             <h3>{{$post->content}}</h3>
+                            <span style="color:#00a3ff; cursor: pointer;" onclick="updateLike({{$post->id}},this)">{{$post->likes()->where('user_id',\Auth::user()->id)->count() > 0 ? 'Unlike':'Like'}} ({{$post->likes()->count()}})</span> | 
                             @if(\Auth::user()->id == $post->user_id)
                             <span style="color:rgb(114, 104, 222); cursor: pointer;" onclick="_update({{$post->id}})">Update</span> | <span style="color:#de6868; cursor: pointer;" onclick="_delete({{$post->id}})">Delete</span> | 
                             @endif
@@ -175,8 +176,31 @@
             });
         }
 
+        function updateLike(id,element){
+            $.ajax({
+                url:"{{route('json_update_like')}}",
+                type:'POST',
+                data:{
+                    post_id:id
+                },
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                success:function(data){
+                    if(data.status == 'success'){
+                        if(data.message == "liked"){
+                            $(element).html('Unlike ('+data.likes+')');
+                        }
+                        else
+                        {
+                            $(element).html('Like ('+data.likes+')');
+                        }
+                    }
+                }
+            });
+        }
+
         function addPost(data){
-            var html = '<div class="post"><h3>'+data.content+'</h3>';
+            var liked = $.grep(data.likes,function(e){return e.user_id == {{\Auth::user()->id}};});
+            var html = '<div class="post"><h3>'+data.content+'</h3> <span style="color:#00a3ff; cursor: pointer;" onclick="updateLike('+data.id+',this)">'+(liked.length > 0?'Unlike':'Like')+' ('+data.likes.length+')</span> | ';
 
             if(data.user_id == {{\Auth::user()->id}})
             {
