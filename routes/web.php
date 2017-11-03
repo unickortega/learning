@@ -14,3 +14,10 @@
 Route::get('/', function () {
     return view('welcome');
 });
+
+Auth::routes();
+
+Route::get('/home', 'HomeController@index')->name('home');
+
+Route::post('/user/create/post',['as'=>'json_create_post','uses'=>'PostController@json_create_post']);
+Route::post('/user/delete/post',['as'=>'json_delete_post','uses'=>'PostController@json_delete_post']);
